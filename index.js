@@ -64,50 +64,116 @@ const downloadMedia = function (url, fileName) {
   })
 }
 
-const mentionedTweets = async function () {
+const getMentionedTweets = async function () {
   const date = new Date("2023-01-01")
-  const { data, includes } = await twitterClient.v2.userMentionTimeline(
-    "1523649543820267520",
-    {
-      end_time: date.toISOString(),
-      max_results: 8,
-      expansions: "author_id,attachments.media_keys,in_reply_to_user_id",
-      "media.fields": [
-        "alt_text",
-        "duration_ms",
-        "preview_image_url",
-        "public_metrics",
-        "variants",
-        "url",
-      ],
-    }
-  )
-  // const tweetsArr = data.data;
+  return await twitterClient.v2.userMentionTimeline("1523649543820267520", {
+    end_time: date.toISOString(),
+    max_results: 12,
+    expansions:
+      "author_id,attachments.media_keys,in_reply_to_user_id,referenced_tweets.id",
+    "media.fields": [
+      "alt_text",
+      "duration_ms",
+      "preview_image_url",
+      "public_metrics",
+      "variants",
+      "url",
+    ],
+  })
+}
 
-  // Downloads the file, depending if it is a GIF or Photo (have to add videos!)
-  //////////////////////
-  ///// ADD VIDEOS functionality /////
-  //////////////////////
-  includes.media.forEach(d => {
-    // console.log("Media: ", d);
+const manageMedia = function (mentionedTweets) {
+  let allUrls = []
+  mentionedTweets.includes.media.forEach(d => {
+    // console.log(d)
     let fileName
     let mediaUrl
     switch (d.type) {
       case "animated_gif":
         fileName = `${d.media_key}${d.variants[0].url.slice(-4)}`
         mediaUrl = d.variants[0].url
+        // console.log(mediaUrl)
+        allUrls.push(mediaUrl)
         break
       case "photo":
         fileName = `${d.media_key}${d.url.slice(-4)}`
         mediaUrl = d.url
+        // console.log(mediaUrl)
+        allUrls.push(mediaUrl)
         break
+      case "video":
+        fileName = `${d.media_key}.mp4`
+        mediaUrl = d.variants.reduce((prevVideo, curVideo) => {
+          if (curVideo.bit_rate == undefined) {
+            return prevVideo
+          }
+          if (curVideo.bit_rate > prevVideo.bit_rate) {
+            return curVideo.url
+          }
+        })
+        allUrls.push(mediaUrl)
+      // console.log(mediaUrl)
     }
-    downloadMedia(mediaUrl, fileName)
+    // downloadMedia(mediaUrl, fileName)
   })
+  console.log(allUrls)
+}
+
+const testTwId = "1605695211035926543"
+
+const getTweetPhotoUrl = async function (tweetId) {
+  const tweetReplied = await twitterClient.v2.singleTweet(tweetId, {
+    expansions: "attachments.media_keys",
+    "media.fields": "url",
+  })
+  const tweetMedia = tweetReplied.includes.media
+  console.log(tweetMedia)
+  let mediaURLs = []
+  tweetMedia.forEach(item => mediaURLs.push(item.url))
+  return mediaURLs
+}
+
+const testFunction = async function () {
+  // const { data, includes } = await getMentionedTweets()
+  // const tweetsArr = data.data
+  const tweets = await getMentionedTweets()
+
+  // console.log(tweetsArr)
+
+  // const testTw = tweetsArr[0]
+  // console.log(testTw)
+  // console.log(testTw.referenced_tweets)
+
+  // Downloads the file, depending if it is a GIF or Photo (have to add videos!)
+  manageMedia(tweets)
+}
+
+const getQuotes = async function () {
+  const quotes = await twitterClient.v2.quotes({
+    expansions: ["author_id"],
+    "user.fields": ["username", "url"],
+  })
+  console.log(quotes)
+
+  // for await (const quote of quotes) {
+  //   const quotedTweetAuthor = includes.author(quote)
+
+  //   if (quotedTweetAuthor) {
+  //     console.log(
+  //       "Quote answer tweet",
+  //       quote.id,
+  //       "has been made by",
+  //       quotedTweetAuthor.username
+  //     )
+  //   }
+  // }
 }
 
 // tweet();
 // getTweets("@DescargarMedia");
 // getTweets("anda para allá bobo");
 // searchAndLike();
-mentionedTweets()
+testFunction()
+// getQuotes()
+
+// manageMedia()
