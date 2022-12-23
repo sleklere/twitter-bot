@@ -73,15 +73,22 @@ const getMentionedTweets = async function () {
       "author_id,attachments.media_keys,in_reply_to_user_id,referenced_tweets.id",
     "media.fields": [
       "alt_text",
-      "duration_ms",
-      "preview_image_url",
-      "public_metrics",
+      // "duration_ms",
+      // "preview_image_url",
+      // "public_metrics",
       "variants",
       "url",
     ],
   })
 }
 
+const getTweetInReplyTo = function (tweet) {
+  if (tweet.referenced_tweets.type === "replied_to") {
+    getMediaURLs(tweet.referenced_tweets.id)
+  }
+}
+
+// Downloads the file, depending if it is a GIF or Photo (have to add videos!)
 const manageMedia = function (mentionedTweets) {
   let allUrls = []
   mentionedTweets.includes.media.forEach(d => {
@@ -92,17 +99,14 @@ const manageMedia = function (mentionedTweets) {
       case "animated_gif":
         fileName = `${d.media_key}${d.variants[0].url.slice(-4)}`
         mediaUrl = d.variants[0].url
-        // console.log(mediaUrl)
-        allUrls.push(mediaUrl)
         break
       case "photo":
         fileName = `${d.media_key}${d.url.slice(-4)}`
         mediaUrl = d.url
-        // console.log(mediaUrl)
-        allUrls.push(mediaUrl)
         break
       case "video":
         fileName = `${d.media_key}.mp4`
+        // find the best quality video variant
         mediaUrl = d.variants.reduce((prevVideo, curVideo) => {
           if (curVideo.bit_rate == undefined) {
             return prevVideo
@@ -111,9 +115,9 @@ const manageMedia = function (mentionedTweets) {
             return curVideo.url
           }
         })
-        allUrls.push(mediaUrl)
-      // console.log(mediaUrl)
+        break
     }
+    allUrls.push(mediaUrl)
     // downloadMedia(mediaUrl, fileName)
   })
   console.log(allUrls)
@@ -121,52 +125,71 @@ const manageMedia = function (mentionedTweets) {
 
 const testTwId = "1605695211035926543"
 
-const getTweetPhotoUrl = async function (tweetId) {
-  const tweetReplied = await twitterClient.v2.singleTweet(tweetId, {
+const getMediaURLs = async function (tweetId) {
+  const tweet = await twitterClient.v2.singleTweet(tweetId, {
     expansions: "attachments.media_keys",
-    "media.fields": "url",
+    "media.fields": ["variants", "url"],
   })
-  const tweetMedia = tweetReplied.includes.media
-  console.log(tweetMedia)
-  let mediaURLs = []
-  tweetMedia.forEach(item => mediaURLs.push(item.url))
+  const tweetMediaCopy = tweet.includes?.media.slice()
+  // console.log(tweet.data.attachments)
+  let mediaURLs = tweetMediaCopy?.map(mediaItem => {
+    switch (mediaItem.type) {
+      case "animated_gif":
+        return mediaItem.variants[0].url
+      case "photo":
+        return mediaItem.url
+      case "video":
+        // find the best quality video variant
+        return mediaItem.variants.reduce((prevVideo, curVideo) => {
+          if (curVideo.bit_rate == undefined) {
+            return prevVideo
+          }
+          if (curVideo.bit_rate > prevVideo.bit_rate) {
+            return curVideo.url
+          }
+        })
+    }
+  })
+  // console.log(tweetMediaCopy)
+  // if (mediaURLs) console.log(mediaURLs)
+  // console.log("mediaURLS", mediaURLs != undefined && mediaURLs)
   return mediaURLs
+}
+
+// checks if the tweet entered as an argument is a reply to another tweet,
+// if it is, it will get the URL's for the media objects and reply to the tweet
+// from the arguments with them
+// MISSING FUNCTION FOR CHECKING IF IT ALREADY REPLIED
+const replyWithMediaUrls = async function (tweet) {
+  const refTweets = tweet.referenced_tweets
+  // console.log(refTweets)
+  if (refTweets !== undefined && refTweets[0].type === "replied_to") {
+    // console.log(refTweets)
+    const mediaURLs = await getMediaURLs(refTweets[0].id)
+    try {
+      let replyText = `Enter this link/s to download your media:\n\n`
+      mediaURLs.forEach(url => {
+        replyText += `${url}\n`
+      })
+      console.log(replyText)
+      // await twitterClient.v2.reply(replyText, tweet.id)
+      console.log("Replied to tweet")
+    } catch (err) {
+      console.log(err.data.errors)
+    }
+  }
 }
 
 const testFunction = async function () {
   // const { data, includes } = await getMentionedTweets()
   // const tweetsArr = data.data
-  const tweets = await getMentionedTweets()
-
-  // console.log(tweetsArr)
-
-  // const testTw = tweetsArr[0]
-  // console.log(testTw)
-  // console.log(testTw.referenced_tweets)
-
-  // Downloads the file, depending if it is a GIF or Photo (have to add videos!)
-  manageMedia(tweets)
-}
-
-const getQuotes = async function () {
-  const quotes = await twitterClient.v2.quotes({
-    expansions: ["author_id"],
-    "user.fields": ["username", "url"],
+  const mentionsTimeline = await getMentionedTweets()
+  const tweets = mentionsTimeline.data.data
+  // console.log(tweets[0].referenced_tweets)
+  // console.log(tweets)
+  tweets.forEach(tweet => {
+    replyWithMediaUrls(tweet)
   })
-  console.log(quotes)
-
-  // for await (const quote of quotes) {
-  //   const quotedTweetAuthor = includes.author(quote)
-
-  //   if (quotedTweetAuthor) {
-  //     console.log(
-  //       "Quote answer tweet",
-  //       quote.id,
-  //       "has been made by",
-  //       quotedTweetAuthor.username
-  //     )
-  //   }
-  // }
 }
 
 // tweet();
@@ -175,5 +198,4 @@ const getQuotes = async function () {
 // searchAndLike();
 testFunction()
 // getQuotes()
-
 // manageMedia()
