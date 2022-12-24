@@ -30,10 +30,6 @@ const getTweets = async function (query) {
       "author_id,attachments.media_keys,entities.mentions.username,in_reply_to_user_id",
     "tweet.fields": ["conversation_id"],
   })
-  // console.log(response)
-
-  // tweets
-  // console.log(response.data.data)
   return response
 }
 
@@ -44,14 +40,7 @@ const getMentionedTweets = async function () {
     max_results: 12,
     expansions:
       "author_id,attachments.media_keys,in_reply_to_user_id,referenced_tweets.id",
-    "media.fields": [
-      "alt_text",
-      // "duration_ms",
-      // "preview_image_url",
-      // "public_metrics",
-      "variants",
-      "url",
-    ],
+    "media.fields": ["alt_text", "variants", "url"],
     "tweet.fields": ["conversation_id"],
   })
 }
@@ -75,7 +64,6 @@ const checkIfAlreadyReplied = async function (conversation_id, authorId) {
         return true
       }
     }
-    // else the tw is not from the bot
   }
   console.log("Didn't reply yet!")
   return false
@@ -106,9 +94,6 @@ const getMediaURLs = async function (tweetId) {
         })
     }
   })
-  // console.log(tweetMediaCopy)
-  // if (mediaURLs) console.log(mediaURLs)
-  console.log("mediaURLS", mediaURLs != undefined && mediaURLs)
   return mediaURLs
 }
 
@@ -118,14 +103,11 @@ const replyWithMediaUrls = async function (mediaURLs, tweetId) {
     mediaURLs.forEach(url => {
       replyText += `${url}\n`
     })
-    console.log(replyText)
     await twitterClient.v2.reply(replyText, tweetId)
     console.log("Replied to tweet")
   } catch (err) {
-    // console.log(err)
     console.log(err.data.detail)
   }
-  // }
 }
 
 module.exports = {

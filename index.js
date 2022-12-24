@@ -37,15 +37,12 @@ const init = async function () {
       tw.author_id
     )
     if (replied === false) {
-      // tweetsToReply.push(tw)
-      console.log("tw to answer", tw)
       const refTweets = tw.referenced_tweets
-      // console.log(refTweets)
+      // checks if the tw that tags the bot is a reply
       if (refTweets !== undefined && refTweets[0].type === "replied_to") {
         const mediaURLs = await getMediaURLs(tw.referenced_tweets[0].id)
         // reply to the tweet where the bot was mentioned
         replyWithMediaUrls(mediaURLs, tw.id)
-        await new Promise(resolve => setTimeout(resolve, 1000))
         await delay(10)
       }
     }
