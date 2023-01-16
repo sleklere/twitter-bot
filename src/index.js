@@ -1,31 +1,19 @@
-////////////////
-const {
-  // delay,
-  // tweet,
-  // getOneTweet,
-  // getTweets,
-  // getMentionedTweets,
-  // checkIfAlreadyReplied,
-  // getMediaURLs,
-  // replyWithMediaUrls,
-  Bot,
-} = require("./utils")
+const express = require("express")
+const app = express()
 
 require("dotenv").config({ path: __dirname + "/.env" })
 
-const { twitterClient, twitterBearer } = require("./twitterClient.js")
-
+const Bot = require("./utils")
+const { twitterClient } = require("./twitterClient.js")
 const bot = new Bot(twitterClient.v2)
 
-const express = require("express")
-
-////////////////
-
-const app = express()
+/////////////////////////////////////
 
 app.listen(8000, (req, res) => {
   console.log("Listening. Port 8000")
 })
+
+/////////////////////////////////////
 
 // const clientId = "blJjZ01HcVhUSWtJMF9IVk9wY1I6MTpjaQ";
 // const clientSecret = "mWoLK7kR0PdMdRCoPtJOXOqT_XRUBWt75hhkoIqq5oug4vfJ6K";
@@ -52,4 +40,4 @@ const init = async function () {
   }
 }
 
-// init()
+init()

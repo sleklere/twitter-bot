@@ -1,5 +1,4 @@
 require("dotenv").config({ path: __dirname + "/.env" })
-const { twitterClient, twitterBearer } = require("./twitterClient.js")
 
 class Bot {
   constructor(client) {
@@ -117,14 +116,4 @@ class Bot {
   }
 }
 
-module.exports = {
-  // delay,
-  // tweet,
-  // getOneTweet,
-  // getTweets,
-  // getMentionedTweets,
-  // checkIfAlreadyReplied,
-  // getMediaURLs,
-  // replyWithMediaUrls,
-  Bot,
-}
+module.exports = Bot
