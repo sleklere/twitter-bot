@@ -1,4 +1,4 @@
-require("dotenv").config({ path: __dirname + "/.env" })
+require('dotenv').config({ path: __dirname + '/.env' })
 
 class Bot {
   constructor(client) {
@@ -19,44 +19,42 @@ class Bot {
 
   async getOneTweet(tweetId) {
     const tweet = await this.twClientV2.singleTweet(tweetId, {
-      expansions: "attachments.media_keys",
-      "tweet.fields": ["conversation_id"],
+      expansions: 'attachments.media_keys',
+      'tweet.fields': ['conversation_id'],
     })
     console.log(tweet)
     return tweet
   }
 
   async getTweets(query) {
-    console.log("==========")
+    console.log('==========')
     console.log(`GET_TWEETS with query: ${query}`)
-    console.log("==========")
+    console.log('==========')
     const response = await this.twClientV2.search(query, {
       expansions:
-        "author_id,attachments.media_keys,entities.mentions.username,in_reply_to_user_id",
-      "tweet.fields": ["conversation_id"],
+        'author_id,attachments.media_keys,entities.mentions.username,in_reply_to_user_id',
+      'tweet.fields': ['conversation_id'],
     })
     return response
   }
 
   async getMentionedTweets() {
-    const date = new Date("2023-01-01")
-    return await this.twClientV2.userMentionTimeline("1523649543820267520", {
+    const date = new Date('2023-01-01')
+    return await this.twClientV2.userMentionTimeline('1523649543820267520', {
       end_time: date.toISOString(),
       max_results: 12,
       expansions:
-        "author_id,attachments.media_keys,in_reply_to_user_id,referenced_tweets.id",
-      "media.fields": ["alt_text", "variants", "url"],
-      "tweet.fields": ["conversation_id"],
+        'author_id,attachments.media_keys,in_reply_to_user_id,referenced_tweets.id',
+      'media.fields': ['alt_text', 'variants', 'url'],
+      'tweet.fields': ['conversation_id'],
     })
   }
 
   async checkIfAlreadyReplied(conversation_id, authorId) {
     const search = await this.getTweets(`conversation_id:${conversation_id}`)
     const tweets = search.data.data
-    // console.log(tweets)
     if (search.data.meta.result_count === 0) {
-      // console.log(search.data.meta)
-      console.log("No conversation")
+      console.log('No conversation')
       return 3
     }
     for (const tw of tweets) {
@@ -64,8 +62,7 @@ class Bot {
       if (tw.author_id === process.env.APP_ID) {
         // check if it is a reply to the tw with the authorId from the arguments
         if (tw.in_reply_to_user_id === authorId) {
-          // console.log(tw)
-          console.log("Already replied!")
+          console.log('Already replied!')
           return true
         }
       }
@@ -76,18 +73,17 @@ class Bot {
 
   async getMediaURLs(tweetId) {
     const tweet = await this.twClientV2.singleTweet(tweetId, {
-      expansions: "attachments.media_keys",
-      "media.fields": ["variants", "url"],
+      expansions: 'attachments.media_keys',
+      'media.fields': ['variants', 'url'],
     })
     const tweetMediaCopy = tweet.includes?.media.slice()
-    // console.log(tweet.data.attachments)
     let mediaURLs = tweetMediaCopy?.map(mediaItem => {
       switch (mediaItem.type) {
-        case "animated_gif":
+        case 'animated_gif':
           return mediaItem.variants[0].url
-        case "photo":
+        case 'photo':
           return mediaItem.url
-        case "video":
+        case 'video':
           // find the best quality video variant
           return mediaItem.variants.reduce((prevVideo, curVideo) => {
             if (curVideo.bit_rate == undefined) {
@@ -109,7 +105,7 @@ class Bot {
         replyText += `${url}\n`
       })
       await this.twClientV2.reply(replyText, tweetId)
-      console.log("Replied to tweet")
+      console.log('Replied to tweet')
     } catch (err) {
       console.log(err.data.detail)
     }
